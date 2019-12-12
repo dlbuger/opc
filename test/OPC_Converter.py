@@ -1,6 +1,7 @@
 #!/usr/bin/python
 # -*- coding: UTF-8 -*-
 import logging, time, sys, decimal, OpenOPC, ttk, tkFileDialog, urllib,urllib2
+import threading
 from Tkinter import *
 import Tkinter as tk
 from datetime import datetime
@@ -133,88 +134,94 @@ def start():
     idx = server.register_namespace(uri)
     root = server.nodes.objects.add_object(idx, OPC_DA_SERVER)
     ## 3. Discover OPC-DA server nodes
-    readable_variable_handles = {}
-    writeable_variable_handles = {}
-    nodes = c.list('*',recursive=True, flat = True)
-    # 'nodes' is a list of dot-delimited strings.
-    tree = {}
-    #Matriton simulator has BUG for the following nodes! So remove them before trying to use Matriton simulator
-    #nodes.remove(u'Bucket Brigade.Time')
-    #nodes.remove(u'Random.Time')
-    #nodes.remove(u'Write Error.Time')
-    #nodes.remove(u'Write Only.Time')
-    for node in nodes:
-        parts = node.split('.')
-        # Folders are the steps on the path to the file.
-        folders = parts[:-1]
-        file = parts[-1]
-        # Create folder tree if it does not already exist
-        for i, folder in enumerate(folders,1):
-            if i == 1:
-                parent = root
-            else:
-                parent = tree[path]
-            path = '.'.join(folders[0:i])
-            if path not in tree.keys():
-                tree[path] = parent.add_folder(idx, folder.encode('utf-8'))
-        # 'path' is now the folder that file resides in.
-        # Determine node properties
-        node_obj = {}
-        for id, description_of_id, value in c.properties(node):
-            if id is ITEM_ACCESS_RIGHTS:
-                if value == 'Read':
-                    value = ACCESS_READ
-                elif value == 'Write':
-                    value = ACCESS_WRITE
-                elif value == 'Read/Write':
-                    value = ACCESS_READ_WRITE
-            node_obj[id] = value
-        current_value = read_value((node_obj[ITEM_VALUE],))
-        if type(current_value) != int:
-            current_value = 0
-        #print('Adding node ' + file + ' at path ' + path)
-        opcua_node = tree[path].add_variable(idx, file.encode('utf-8'), ua.Variant(current_value, ua.VariantType.UInt16))
-        # Determine readable vs. writable
-        if node_obj[ITEM_ACCESS_RIGHTS] in [ACCESS_READ]:
-            readable_variable_handles[node] = opcua_node
-        if node_obj[ITEM_ACCESS_RIGHTS] in [ACCESS_WRITE, ACCESS_READ_WRITE]:
-            opcua_node.set_writable()
-            writeable_variable_handles[node] = opcua_node
-
-    #try:
     server.start()
-    ## 4. Subscribe to datachanges coming from OPC-UA clients
-    handler = SubscriptionHandler(len(writeable_variable_handles))
-    sub = server.create_subscription(100, handler).subscribe_data_change(writeable_variable_handles.values())
-    readables = list(readable_variable_handles.keys())
-    time.sleep(0.5)
-    ## 5. Read all readables simultaneously and update the OPC-UA variables
-    #while True:
-    i=0
-    for reading in c.read(readables):
-        print(i)
-        i = i+1
+
+    while True:
+        readable_variable_handles = {}
+        writeable_variable_handles = {}
+        nodes = c.list('*',recursive=True, flat = True)
+        # 'nodes' is a list of dot-delimited strings.
+        tree = {}
+        #Matriton simulator has BUG for the following nodes! So remove them before trying to use Matriton simulator
+        #nodes.remove(u'Bucket Brigade.Time')
+        #nodes.remove(u'Random.Time')
+        #nodes.remove(u'Write Error.Time')
+        #nodes.remove(u'Write Only.Time')
+        for node in nodes:
+            parts = node.split('.')
+            # Folders are the steps on the path to the file.
+            folders = parts[:-1]
+            file = parts[-1]
+            # Create folder tree if it does not already exist
+            for i, folder in enumerate(folders,1):
+                if i == 1:
+                    parent = root
+                else:
+                    parent = tree[path]
+                path = '.'.join(folders[0:i])
+                if path not in tree.keys():
+                    tree[path] = parent.add_folder(idx, folder.encode('utf-8'))
+            # 'path' is now the folder that file resides in.
+            # Determine node properties
+            node_obj = {}
+            for id, description_of_id, value in c.properties(node):
+                if id is ITEM_ACCESS_RIGHTS:
+                    if value == 'Read':
+                        value = ACCESS_READ
+                    elif value == 'Write':
+                        value = ACCESS_WRITE
+                    elif value == 'Read/Write':
+                        value = ACCESS_READ_WRITE
+                node_obj[id] = value
+            current_value = read_value((node_obj[ITEM_VALUE],))
+            if type(current_value) != int:
+                current_value = 0
+            #print('Adding node ' + file + ' at path ' + path)
+            opcua_node = tree[path].add_variable(idx, file.encode('utf-8'), ua.Variant(current_value, ua.VariantType.UInt16))
+            # Determine readable vs. writable
+            if node_obj[ITEM_ACCESS_RIGHTS] in [ACCESS_READ]:
+                readable_variable_handles[node] = opcua_node
+            if node_obj[ITEM_ACCESS_RIGHTS] in [ACCESS_WRITE, ACCESS_READ_WRITE]:
+                opcua_node.set_writable()
+                writeable_variable_handles[node] = opcua_node
+
+        #try:
+        ## 4. Subscribe to datachanges coming from OPC-UA clients
+        handler = SubscriptionHandler(len(writeable_variable_handles))
+        sub = server.create_subscription(100, handler).subscribe_data_change(writeable_variable_handles.values())
         readables = list(readable_variable_handles.keys())
-        opc_da_id = reading[0]
-        variable_handle = readable_variable_handles[opc_da_id]
-        variable_handle.set_value(read_value(reading[1:]))
-    #finally:
-        #server.stop()
-        #c.close()
+        time.sleep(0.5)
+        ## 5. Read all readables simultaneously and update the OPC-UA variables
+        #while True:
+        i=0
+        for reading in c.read(readables):
+            print(i)
+            i = i+1
+            readables = list(readable_variable_handles.keys())
+            opc_da_id = reading[0]
+            variable_handle = readable_variable_handles[opc_da_id]
+            variable_handle.set_value(read_value(reading[1:]))
+        #finally:
+            #server.stop()
+            #c.close()
 
-
-
+def thread_start():
+    thread = threading.Thread(target=start)
+    thread.start()
+def thread_end():
+    thread = threading.Thread(target=stop)
+    thread.start()
 #启动转发
 
-B4 = tk.Button(window, text = 'Start', command = start).grid(row=5,column=1)
-
+B4 = tk.Button(window, text = 'Start', command = thread_start, ).grid(row=5,column=1)
 
 
 # 关闭转发
 def stop():
+    window.quit()
     server.stop()
     c.close()
-B5 = tk.Button(window, text = 'Stop', command = stop).grid(row=5, column=2)
+B5 = tk.Button(window, text = 'Stop', command = thread_end).grid(row=5, column=2)
 
 
 #开启窗口
