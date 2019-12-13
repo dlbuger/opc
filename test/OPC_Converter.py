@@ -135,19 +135,20 @@ def start():
     root = server.nodes.objects.add_object(idx, OPC_DA_SERVER)
     ## 3. Discover OPC-DA server nodes
     server.start()
-
+    readable_variable_handles = {}
+    writeable_variable_handles = {}
+    tree = {}
+    node_obj = {}
     while True:
-        readable_variable_handles = {}
-        writeable_variable_handles = {}
         nodes = c.list('*',recursive=True, flat = True)
         # 'nodes' is a list of dot-delimited strings.
-        tree = {}
         #Matriton simulator has BUG for the following nodes! So remove them before trying to use Matriton simulator
         #nodes.remove(u'Bucket Brigade.Time')
         #nodes.remove(u'Random.Time')
         #nodes.remove(u'Write Error.Time')
         #nodes.remove(u'Write Only.Time')
         for node in nodes:
+
             parts = node.split('.')
             # Folders are the steps on the path to the file.
             folders = parts[:-1]
@@ -158,12 +159,12 @@ def start():
                     parent = root
                 else:
                     parent = tree[path]
-                path = '.'.join(folders[0:i])
+                path = '.'.join(folders[0:i]).encode('utf-8')
                 if path not in tree.keys():
                     tree[path] = parent.add_folder(idx, folder.encode('utf-8'))
             # 'path' is now the folder that file resides in.
             # Determine node properties
-            node_obj = {}
+
             for id, description_of_id, value in c.properties(node):
                 if id is ITEM_ACCESS_RIGHTS:
                     if value == 'Read':
@@ -178,7 +179,8 @@ def start():
                 current_value = 0
             #print('Adding node ' + file + ' at path ' + path)
             opcua_node = tree[path].add_variable(idx, file.encode('utf-8'), ua.Variant(current_value, ua.VariantType.UInt16))
-            # Determine readable vs. writable
+            #Determine readable vs. writable
+            
             if node_obj[ITEM_ACCESS_RIGHTS] in [ACCESS_READ]:
                 readable_variable_handles[node] = opcua_node
             if node_obj[ITEM_ACCESS_RIGHTS] in [ACCESS_WRITE, ACCESS_READ_WRITE]:
@@ -188,15 +190,14 @@ def start():
         #try:
         ## 4. Subscribe to datachanges coming from OPC-UA clients
         handler = SubscriptionHandler(len(writeable_variable_handles))
-        sub = server.create_subscription(100, handler).subscribe_data_change(writeable_variable_handles.values())
+        sub = server.create_subscription(100, handler)
+        sub.subscribe_data_change(writeable_variable_handles.values())
         readables = list(readable_variable_handles.keys())
-        time.sleep(0.5)
+        time.sleep(5)
         ## 5. Read all readables simultaneously and update the OPC-UA variables
         #while True:
-        i=0
+        
         for reading in c.read(readables):
-            print(i)
-            i = i+1
             readables = list(readable_variable_handles.keys())
             opc_da_id = reading[0]
             variable_handle = readable_variable_handles[opc_da_id]
