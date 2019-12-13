@@ -139,6 +139,7 @@ def start():
     writeable_variable_handles = {}
     tree = {}
     node_obj = {}
+    file_track = []
     while True:
         nodes = c.list('*',recursive=True, flat = True)
         # 'nodes' is a list of dot-delimited strings.
@@ -164,7 +165,6 @@ def start():
                     tree[path] = parent.add_folder(idx, folder.encode('utf-8'))
             # 'path' is now the folder that file resides in.
             # Determine node properties
-
             for id, description_of_id, value in c.properties(node):
                 if id is ITEM_ACCESS_RIGHTS:
                     if value == 'Read':
@@ -178,14 +178,19 @@ def start():
             if type(current_value) != int:
                 current_value = 0
             #print('Adding node ' + file + ' at path ' + path)
-            opcua_node = tree[path].add_variable(idx, file.encode('utf-8'), ua.Variant(current_value, ua.VariantType.UInt16))
+            if file in file_track:
+                pass
+            else:
+                opcua_node = tree[path].add_variable(idx, file.encode('utf-8'), ua.Variant(current_value, ua.VariantType.UInt16))
+                if node_obj[ITEM_ACCESS_RIGHTS] in [ACCESS_READ]:
+                    readable_variable_handles[node] = opcua_node
+                if node_obj[ITEM_ACCESS_RIGHTS] in [ACCESS_WRITE, ACCESS_READ_WRITE]:
+                    opcua_node.set_writable()
+                    writeable_variable_handles[node] = opcua_node
+                file_track.append(file)
             #Determine readable vs. writable
             
-            if node_obj[ITEM_ACCESS_RIGHTS] in [ACCESS_READ]:
-                readable_variable_handles[node] = opcua_node
-            if node_obj[ITEM_ACCESS_RIGHTS] in [ACCESS_WRITE, ACCESS_READ_WRITE]:
-                opcua_node.set_writable()
-                writeable_variable_handles[node] = opcua_node
+            
 
         #try:
         ## 4. Subscribe to datachanges coming from OPC-UA clients
@@ -193,7 +198,7 @@ def start():
         sub = server.create_subscription(100, handler)
         sub.subscribe_data_change(writeable_variable_handles.values())
         readables = list(readable_variable_handles.keys())
-        time.sleep(5)
+        time.sleep(0.5)
         ## 5. Read all readables simultaneously and update the OPC-UA variables
         #while True:
         
