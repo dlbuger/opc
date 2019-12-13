@@ -148,6 +148,8 @@ def start():
         #nodes.remove(u'Random.Time')
         #nodes.remove(u'Write Error.Time')
         #nodes.remove(u'Write Only.Time')
+        print len(nodes)
+        print len(tree)
         for node in nodes:
 
             parts = node.split('.')
@@ -188,6 +190,8 @@ def start():
                     opcua_node.set_writable()
                     writeable_variable_handles[node] = opcua_node
                 file_track.append(file)
+
+            print len(folders)
             #Determine readable vs. writable
             
             
@@ -207,6 +211,7 @@ def start():
             opc_da_id = reading[0]
             variable_handle = readable_variable_handles[opc_da_id]
             variable_handle.set_value(read_value(reading[1:]))
+        
         #finally:
             #server.stop()
             #c.close()
