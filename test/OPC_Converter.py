@@ -150,9 +150,9 @@ def start():
             init_nodes = len(nodes)
         if len(nodes)!= init_nodes:
             print("NODES Changed")
-			for _n in nodes_track:
-				if _n in in nodes:
-					print(_n)
+            for _n in nodes_track:
+                if _n not in nodes:
+                    print(_n)
 					
             init_nodes = len(nodes)
 			
@@ -209,8 +209,9 @@ def start():
             #print "NODES -> %d"%len(nodes)
             #print "TREE -> %d"%len(tree)
             #print "FOLDERS -> %d"%len(folders)
-            print(node_obj.keys())
-			nodes_track = nodes
+            #print(node_obj.keys())
+            print(node_obj)
+            nodes_track = nodes
 
             
             
