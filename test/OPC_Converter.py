@@ -149,15 +149,17 @@ def start():
         if init_nodes is None:
             init_nodes = len(nodes)
         if len(nodes)!= init_nodes:
-            print("NODES Changed")
+            #print("NODES Changed")
             for _n in nodes_track:
                 if _n not in nodes:
                     for k in node_obj.copy():
-						if node_obj[k] == -N:
-							del node_obj[k]
-							print "delete tag"
+                        print "node_obj => %s"%node_obj[k] 
+                        print "NODE => %s"%_n
+                        del node_obj[k]
+							#print("delete tag")
 					
             init_nodes = len(nodes)
+            print node_obj.keys()
 			
         # 'nodes' is a list of dot-delimited strings.
         #Matriton simulator has BUGs for the following nodes! So remove them if trying to use Matriton simulator
@@ -184,6 +186,7 @@ def start():
             # 'path' is now the folder that file resides in.
             # Determine node properties
             for id, description_of_id, value in c.properties(node):
+                #print(id, value)
                 if id is ITEM_ACCESS_RIGHTS:
                     if value == 'Read':
                         value = ACCESS_READ
@@ -213,7 +216,7 @@ def start():
             #print "TREE -> %d"%len(tree)
             #print "FOLDERS -> %d"%len(folders)
             #print(node_obj.keys())
-            print(node_obj)
+            #print(node_obj)
             nodes_track = nodes
 
             
@@ -225,7 +228,7 @@ def start():
         sub = server.create_subscription(100, handler)
         sub.subscribe_data_change(writeable_variable_handles.values())
         readables = list(readable_variable_handles.keys())
-        time.sleep(5)
+        time.sleep(0.5)
         ## 5. Read all readables simultaneously and update the OPC-UA variables
         #while True:
         
