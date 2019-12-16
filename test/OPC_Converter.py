@@ -145,9 +145,10 @@ def start():
         nodes = c.list('*',recursive=True, flat = True)
         if init_nodes is None:
             init_nodes = len(nodes)
-        
+        if len(nodes)!= init_nodes:
+            print("NODES Changed")
         # 'nodes' is a list of dot-delimited strings.
-        #Matriton simulator has BUG for the following nodes! So remove them if trying to use Matriton simulator
+        #Matriton simulator has BUGs for the following nodes! So remove them if trying to use Matriton simulator
         #nodes.remove(u'Bucket Brigade.Time')
         #nodes.remove(u'Random.Time')
         #nodes.remove(u'Write Error.Time')
@@ -196,7 +197,9 @@ def start():
                     writeable_variable_handles[node] = opcua_node
                 file_track.append(file)
             
-            print(init_nodes)
+            #print "NODES -> %d"%len(nodes)
+            #print "TREE -> %d"%len(tree)
+            #print "FOLDERS -> %d"%len(folders)
 
 
             
@@ -208,7 +211,7 @@ def start():
         sub = server.create_subscription(100, handler)
         sub.subscribe_data_change(writeable_variable_handles.values())
         readables = list(readable_variable_handles.keys())
-        time.sleep(0.5)
+        time.sleep(5)
         ## 5. Read all readables simultaneously and update the OPC-UA variables
         #while True:
         
