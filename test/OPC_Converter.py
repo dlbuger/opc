@@ -152,7 +152,10 @@ def start():
             print("NODES Changed")
             for _n in nodes_track:
                 if _n not in nodes:
-                    print(_n)
+                    for k in node_obj.copy():
+						if node_obj[k] == -N:
+							del node_obj[k]
+							print "delete tag"
 					
             init_nodes = len(nodes)
 			
