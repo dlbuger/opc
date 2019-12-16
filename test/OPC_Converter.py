@@ -140,16 +140,19 @@ def start():
     tree = {}
     node_obj = {}
     file_track = []
+    init_nodes = None
     while True:
         nodes = c.list('*',recursive=True, flat = True)
+        if init_nodes is None:
+            init_nodes = len(nodes)
+        
         # 'nodes' is a list of dot-delimited strings.
-        #Matriton simulator has BUG for the following nodes! So remove them before trying to use Matriton simulator
+        #Matriton simulator has BUG for the following nodes! So remove them if trying to use Matriton simulator
         #nodes.remove(u'Bucket Brigade.Time')
         #nodes.remove(u'Random.Time')
         #nodes.remove(u'Write Error.Time')
         #nodes.remove(u'Write Only.Time')
-        print len(nodes)
-        print len(tree)
+        
         for node in nodes:
 
             parts = node.split('.')
@@ -179,20 +182,23 @@ def start():
             current_value = read_value((node_obj[ITEM_VALUE],))
             if type(current_value) != int:
                 current_value = 0
-            #print('Adding node ' + file + ' at path ' + path)
+            
             if file in file_track:
                 pass
             else:
+                #print('Adding node ' + file + ' at path ' + path)
                 opcua_node = tree[path].add_variable(idx, file.encode('utf-8'), ua.Variant(current_value, ua.VariantType.UInt16))
+                #Determine readable vs. writable
                 if node_obj[ITEM_ACCESS_RIGHTS] in [ACCESS_READ]:
                     readable_variable_handles[node] = opcua_node
                 if node_obj[ITEM_ACCESS_RIGHTS] in [ACCESS_WRITE, ACCESS_READ_WRITE]:
                     opcua_node.set_writable()
                     writeable_variable_handles[node] = opcua_node
                 file_track.append(file)
+            
+            print(init_nodes)
 
-            print len(folders)
-            #Determine readable vs. writable
+
             
             
 
