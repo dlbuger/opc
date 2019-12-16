@@ -139,16 +139,23 @@ def start():
     writeable_variable_handles = {}
     tree = {}
     node_obj = {}
+
     file_track = []
     nodes_track = []
+
     init_nodes = None
     while True:
         nodes = c.list('*',recursive=True, flat = True)
         if init_nodes is None:
             init_nodes = len(nodes)
         if len(nodes)!= init_nodes:
-            print("NODES Changed")           
+            print("NODES Changed")
+			for _n in nodes_track:
+				if _n in in nodes:
+					print(_n)
+					
             init_nodes = len(nodes)
+			
         # 'nodes' is a list of dot-delimited strings.
         #Matriton simulator has BUGs for the following nodes! So remove them if trying to use Matriton simulator
         #nodes.remove(u'Bucket Brigade.Time')
@@ -203,6 +210,7 @@ def start():
             #print "TREE -> %d"%len(tree)
             #print "FOLDERS -> %d"%len(folders)
             print(node_obj.keys())
+			nodes_track = nodes
 
             
             
