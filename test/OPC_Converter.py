@@ -118,7 +118,11 @@ def read_value(value):
 
 
 server = None
+server_status = False
 def start():
+	
+	global server_status
+	server_status = True
     logging.basicConfig()
     OPC_DA_SERVER = C1.get()
     c.connect(OPC_DA_SERVER)
@@ -144,7 +148,7 @@ def start():
     nodes_track = []
 
     init_nodes = None
-    while True:
+    while server_status:
         nodes = c.list('*',recursive=True, flat = True)
         if init_nodes is None:
             init_nodes = len(nodes)
@@ -255,9 +259,11 @@ B4 = tk.Button(window, text = 'Start', command = thread_start, ).grid(row=5,colu
 
 # 关闭转发
 def stop():
-    window.quit()
+	server_status = False
     server.stop()
     c.close()
+    window.quit()
+	
 B5 = tk.Button(window, text = 'Stop', command = thread_end).grid(row=5, column=2)
 
 
